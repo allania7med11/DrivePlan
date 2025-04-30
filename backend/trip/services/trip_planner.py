@@ -27,7 +27,7 @@ class TripPlanner:
 
         self.loading_time: float = round_up_to_15min(1)
         self.unloading_time: float = round_up_to_15min(1)
-        self.start_time: float = start_time or 5 or get_current_time_rounded_up()
+        self.start_time: float = start_time or get_current_time_rounded_up()
 
     def plan_trip(self) -> Dict[str, List[Dict[str, Any]]]:
         self._validate_duty_window()
