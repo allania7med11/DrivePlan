@@ -2,6 +2,9 @@ import { useState, ChangeEvent, FormEvent } from "react";
 import dynamic from "next/dynamic";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
+const DailyLogCanvas = dynamic(() => import("./DailyLogCanvas"), {
+  ssr: false,
+});
 
 type TripFormData = {
   current_location: string;
@@ -98,6 +101,9 @@ export default function TripForm() {
           </pre>
         </>
       )}
+      <div className="mt-4">
+        <DailyLogCanvas />
+      </div>
 
       {error && (
         <div className="mt-4 p-2 text-red-600 bg-red-100 rounded">{error}</div>
