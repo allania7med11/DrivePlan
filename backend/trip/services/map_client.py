@@ -17,6 +17,10 @@ class MapClientProtocol(Protocol):
     def durations_from_coords(self, locations: List[Tuple[float, float]]) -> List[float]:
         """Get durations in hours between each sequential pair of locations."""
         ...
+    
+    def get_route_geometries(self, locations: List[Tuple[float, float]]) -> List[List[Tuple[float, float]]]:
+        """Get polyline geometry for each sequential pair of locations."""
+        ...
 
 
 # Concrete implementation
@@ -68,3 +72,29 @@ class MapClient(MapClientProtocol):
             ]
         except Exception as e:
             raise MapAPIError(f"Failed to get durations: {e}")
+    
+    def get_route_geometries(self, locations: List[Tuple[float, float]]) -> List[List[Tuple[float, float]]]:
+        """
+        Get list of route geometries between each pair of points.
+        Each geometry is a list of (lon, lat) points forming a polyline.
+        """
+        if len(locations) < 2:
+            raise ValueError("At least two coordinates are required to compute routes.")
+
+        geometries = []
+
+        try:
+            for i in range(len(locations) - 1):
+                start = locations[i]
+                end = locations[i + 1]
+                route = self.client.directions(
+                    coordinates=[start, end],
+                    profile='driving-car',
+                    format='geojson'
+                )
+                coords = route['features'][0]['geometry']['coordinates']
+                geometries.append(coords)
+        except Exception as e:
+            raise MapAPIError(f"Failed to get route geometry: {e}")
+
+        return geometries
