@@ -2,6 +2,9 @@ import { useState, ChangeEvent, FormEvent } from "react";
 import dynamic from "next/dynamic";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
+const DailyLogCanvas = dynamic(() => import("./DailyLogCanvas"), {
+  ssr: false,
+});
 
 type TripFormData = {
   current_location: string;
@@ -27,7 +30,6 @@ export default function TripForm() {
       [e.target.name]: e.target.value,
     }));
   };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -91,11 +93,12 @@ export default function TripForm() {
       {result && (
         <>
           <div className="mt-4">
-            <MapView coords={result.coords} routes={result.routes} />
+            <MapView rests={result.rests} routes={result.routes} />
           </div>
-          <pre className="mt-4 p-4 bg-gray-100 rounded overflow-x-auto">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+
+          <div className="mt-4">
+            <DailyLogCanvas logSheet={result.log_sheets?.[0]} />
+          </div>
         </>
       )}
 
