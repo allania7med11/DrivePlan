@@ -95,7 +95,7 @@ class TripPlanner:
 
         load_start = leg1_end
         load_end = load_start + self.loading_time
-        activities.append({"start": load_start, "end": load_end, "type": "On Duty (Loading)"})
+        activities.append({"start": load_start, "end": load_end, "type": "On Duty"})
 
         leg2_start = load_end
         leg2_end = leg2_start + self.drive_times["leg2"]
@@ -103,7 +103,7 @@ class TripPlanner:
 
         unload_start = leg2_end
         unload_end = unload_start + self.unloading_time
-        activities.append({"start": unload_start, "end": unload_end, "type": "On Duty (Unloading)"})
+        activities.append({"start": unload_start, "end": unload_end, "type": "On Duty"})
 
         if unload_end > 24:
             raise DutyLimitExceeded("Trip would extend past midnight.")

@@ -9,8 +9,6 @@ const STATUS_Y: Record<string, number> = {
   "Sleeper Berth": 212,
   "Driving": 224,
   "On Duty": 241,
-  "On Duty (Loading)": 241,
-  "On Duty (Unloading)": 241,
 };
 
 const HOUR_WIDTH = 16.25; // 24 hours fits within 513px
