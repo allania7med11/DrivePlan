@@ -26,16 +26,16 @@ export default function TripPlanner() {
 
         {result && (
           <div className="flex flex-col gap-6">
-            <div className="w-full bg-white p-4 rounded shadow">
+            <div className="w-full bg-white p-6 rounded shadow">
               <h2 className="text-2xl font-semibold mb-2">Map Overview</h2>
               <MapView rests={result.rests} routes={result.routes} />
             </div>
 
-            <div className="w-full bg-white p-4 rounded shadow">
+            <div className="w-full bg-white p-6 rounded shadow">
               <h2 className="text-2xl font-semibold mb-2">
                 Daily Log Sheet
               </h2>
-              <div className="flex justify-center">
+              <div className="flex justify-center p-2">
                 <DailyLogCanvas logSheet={result.log_sheets?.[0]} />
               </div>
             </div>
