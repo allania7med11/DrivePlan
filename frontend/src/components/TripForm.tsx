@@ -30,7 +30,6 @@ export default function TripForm() {
       [e.target.name]: e.target.value,
     }));
   };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -96,14 +95,11 @@ export default function TripForm() {
           <div className="mt-4">
             <MapView coords={result.coords} routes={result.routes} />
           </div>
-          <pre className="mt-4 p-4 bg-gray-100 rounded overflow-x-auto">
-            {JSON.stringify(result, null, 2)}
-          </pre>
+          <div className="mt-4">
+            <DailyLogCanvas activities={result.activities} />
+          </div>
         </>
       )}
-      <div className="mt-4">
-        <DailyLogCanvas />
-      </div>
 
       {error && (
         <div className="mt-4 p-2 text-red-600 bg-red-100 rounded">{error}</div>
