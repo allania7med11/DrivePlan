@@ -25,7 +25,7 @@ type Props = {
 export default function MapView({ rests, routes }: Props) {
   const reverse = ([lng, lat]: [number, number]): [number, number] => [lat, lng];
 
-  const markers = rests.map((rest, index) => ({
+  const markers = rests.map((rest) => ({
     ...rest,
     latlng: reverse(rest.coords),
   }));

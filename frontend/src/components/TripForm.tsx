@@ -1,3 +1,4 @@
+import { TripResult } from "@/types/trip";
 import { useState, ChangeEvent, FormEvent } from "react";
 
 type TripFormData = {
@@ -8,7 +9,7 @@ type TripFormData = {
 };
 
 type Props = {
-  setResult: (data: any) => void;
+  setResult: (data: TripResult | null) => void;
   setError: (error: string) => void;
 };
 
@@ -48,8 +49,12 @@ export default function TripForm({ setResult, setError }: Props) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Something went wrong");
       setResult(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred.");
+      }
     }
   };
 

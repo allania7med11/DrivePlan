@@ -1,14 +1,16 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import TripForm from "./TripForm";
+import { TripResult } from "@/types/trip";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 const DailyLogCanvas = dynamic(() => import("./DailyLogCanvas"), {
   ssr: false,
 });
 
+
 export default function TripPlanner() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<TripResult | null>(null);
   const [error, setError] = useState<string>("");
 
   return (
@@ -28,7 +30,7 @@ export default function TripPlanner() {
           <div className="flex flex-col gap-6">
             <div className="w-full bg-white p-6 rounded shadow">
               <h2 className="text-2xl font-semibold mb-2">Map Overview</h2>
-              <MapView rests={result.rests} routes={result.routes} />
+              <MapView rests={result.rests} routes={[result.routes]} />
             </div>
 
             <div className="w-full bg-white p-6 rounded shadow">
