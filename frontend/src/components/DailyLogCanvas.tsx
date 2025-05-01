@@ -7,7 +7,7 @@ import useImage from "use-image";
 const STATUS_Y: Record<string, number> = {
   "Off Duty": 195,
   "Sleeper Berth": 212,
-  Driving: 224,
+  "Driving": 224,
   "On Duty (Unloading)": 241,
   "On Duty (Loading)": 241,
   "On Duty": 241,
