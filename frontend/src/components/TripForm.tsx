@@ -93,10 +93,11 @@ export default function TripForm() {
       {result && (
         <>
           <div className="mt-4">
-            <MapView coords={result.coords} routes={result.routes} />
+            <MapView rests={result.rests} routes={result.routes} />
           </div>
+
           <div className="mt-4">
-            <DailyLogCanvas activities={result.activities} />
+            <DailyLogCanvas logSheet={result.log_sheets?.[0]} />
           </div>
         </>
       )}
