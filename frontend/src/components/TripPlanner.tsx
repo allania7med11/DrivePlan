@@ -10,7 +10,7 @@ export default function TripPlanner() {
   const [error, setError] = useState<string>("");
 
   return (
-    <div className="p-4 bg-white rounded shadow-md">
+    <div>
       <TripForm setResult={setResult} setError={setError} />
 
       {result && (
