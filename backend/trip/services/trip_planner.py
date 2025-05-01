@@ -17,7 +17,7 @@ class TripPlanner:
         dropoff_location: str,
         cycle_used_hours: float,
         map_client: MapClientProtocol,
-        start_time: Optional[float] = None
+        start_time: Optional[float] = None,
     ):
         self.current_location = current_location
         self.pickup_location = pickup_location
@@ -34,7 +34,7 @@ class TripPlanner:
         return {
             "routes": self.route_geometries,
             "rests": self._build_rests(),
-            "log_sheets": self._build_log_sheets()
+            "log_sheets": self._build_log_sheets(),
         }
 
     def _build_rests(self) -> List[Dict[str, Any]]:
@@ -46,12 +46,11 @@ class TripPlanner:
 
     def _build_log_sheets(self) -> List[Dict[str, Any]]:
         activities = []
+        remarks = []
         if self.start_time > 0:
-            activities.append({
-                "start": 0.0,
-                "end": self.start_time,
-                "status": "Off Duty"
-            })
+            activities.append(
+                {"start": 0.0, "end": self.start_time, "status": "Off Duty"}
+            )
 
         leg1_start = self.start_time
         leg1_end = leg1_start + self.drive_times["leg1"]
@@ -60,6 +59,14 @@ class TripPlanner:
         load_start = leg1_end
         load_end = load_start + self.loading_time
         activities.append({"start": load_start, "end": load_end, "status": "On Duty"})
+        remarks.append(
+            {
+                "start": load_start,
+                "end": load_end,
+                "location": self.pickup_location,
+                "information": "Pickup",
+            }
+        )
 
         leg2_start = load_end
         leg2_end = leg2_start + self.drive_times["leg2"]
@@ -67,7 +74,17 @@ class TripPlanner:
 
         unload_start = leg2_end
         unload_end = unload_start + self.unloading_time
-        activities.append({"start": unload_start, "end": unload_end, "status": "On Duty"})
+        activities.append(
+            {"start": unload_start, "end": unload_end, "status": "On Duty"}
+        )
+        remarks.append(
+            {
+                "start": unload_start,
+                "end": unload_end,
+                "location": self.dropoff_location,
+                "information": "Dropoff",
+            }
+        )
 
         if unload_end > 24:
             raise DutyLimitExceeded("Trip would extend past midnight.")
@@ -80,16 +97,22 @@ class TripPlanner:
 
         for a in activities:
             duration = (a["end"] - a["start"]) * 60
-            hours_by_status[a["status"]] = hours_by_status.get(a["status"], 0) + duration
+            hours_by_status[a["status"]] = (
+                hours_by_status.get(a["status"], 0) + duration
+            )
             total_minutes += duration
 
-        return [{
-            "activities": activities,
-            "total_hours_by_status": {
-                status: round(minutes / 60, 2) for status, minutes in hours_by_status.items()
-            },
-            "total_hours": round(total_minutes / 60, 2)
-        }]
+        return [
+            {
+                "activities": activities,
+                "remarks": remarks,
+                "total_hours_by_status": {
+                    status: round(minutes / 60, 2)
+                    for status, minutes in hours_by_status.items()
+                },
+                "total_hours": round(total_minutes / 60, 2),
+            }
+        ]
 
     def _validate_duty_window(self) -> None:
         total_drive = self.drive_times["leg1"] + self.drive_times["leg2"]
@@ -100,11 +123,9 @@ class TripPlanner:
 
     @cached_property
     def coords(self) -> Dict[str, Tuple[float, float]]:
-        resolved = self.map_client.batch_address_to_coords([
-            self.current_location,
-            self.pickup_location,
-            self.dropoff_location
-        ])
+        resolved = self.map_client.batch_address_to_coords(
+            [self.current_location, self.pickup_location, self.dropoff_location]
+        )
         return {
             "current": resolved[0],
             "pickup": resolved[1],
@@ -113,14 +134,22 @@ class TripPlanner:
 
     @cached_property
     def drive_times(self) -> Dict[str, float]:
-        coord_list = [self.coords["current"], self.coords["pickup"], self.coords["dropoff"]]
+        coord_list = [
+            self.coords["current"],
+            self.coords["pickup"],
+            self.coords["dropoff"],
+        ]
         durations = self.map_client.durations_from_coords(coord_list)
         return {
             "leg1": round_up_to_15min(durations[0]),
-            "leg2": round_up_to_15min(durations[1])
+            "leg2": round_up_to_15min(durations[1]),
         }
 
     @cached_property
     def route_geometries(self) -> List[List[Tuple[float, float]]]:
-        coord_list = [self.coords["current"], self.coords["pickup"], self.coords["dropoff"]]
+        coord_list = [
+            self.coords["current"],
+            self.coords["pickup"],
+            self.coords["dropoff"],
+        ]
         return self.map_client.get_route_geometries(coord_list)
