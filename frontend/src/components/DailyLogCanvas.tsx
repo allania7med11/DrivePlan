@@ -4,6 +4,9 @@ import { Stage, Layer, Line, Image as KonvaImage } from 'react-konva';
 import React from 'react';
 import useImage from 'use-image';
 
+
+export const CANVAS_WIDTH = 513;
+export const CANVAS_HEIGHT = 518;
 const STATUS_Y: Record<string, number> = {
   'Off Duty': 195,
   'Sleeper Berth': 212,
@@ -65,10 +68,10 @@ export default function DailyLogCanvas({ logSheet }: Props) {
   });
 
   return (
-    <Stage width={513} height={518}>
+    <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
       <Layer>
         {image && (
-          <KonvaImage image={image} x={0} y={0} width={513} height={518} />
+          <KonvaImage image={image} x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
         )}
         {lines}
       </Layer>
