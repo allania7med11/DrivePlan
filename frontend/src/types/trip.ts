@@ -15,7 +15,7 @@ export type LogSheet = {
 };
 
 export type TripResult = {
-    routes: [number, number][];
+    routes: [number, number][][];
     rests: {
         name: string;
         coords: [number, number];

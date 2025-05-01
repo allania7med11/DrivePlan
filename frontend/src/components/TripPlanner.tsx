@@ -30,7 +30,7 @@ export default function TripPlanner() {
           <div className="flex flex-col gap-6">
             <div className="w-full bg-white p-6 rounded shadow">
               <h2 className="text-2xl font-semibold mb-2">Map Overview</h2>
-              <MapView rests={result.rests} routes={[result.routes]} />
+              <MapView rests={result.rests} routes={result.routes} />
             </div>
 
             <div className="w-full bg-white p-6 rounded shadow">
