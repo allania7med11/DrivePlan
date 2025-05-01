@@ -46,7 +46,7 @@ export default function TripForm({ setResult, setError }: Props) {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || "Something went wrong");
+      if (!response.ok) throw new Error(data.error || "Something went wrong");
       setResult(data);
     } catch (err: any) {
       setError(err.message);
