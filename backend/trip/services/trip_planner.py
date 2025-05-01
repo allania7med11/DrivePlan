@@ -33,7 +33,9 @@ class TripPlanner:
         self._validate_duty_window()
         return {
             "legs": self._build_legs(),
-            "activities": self._build_activities()
+            "activities": self._build_activities(),
+            "coords": self.coords,
+            "routes": self.route_geometries
         }
 
     @cached_property
@@ -57,6 +59,11 @@ class TripPlanner:
             "leg1": round_up_to_15min(durations[0]),
             "leg2": round_up_to_15min(durations[1])
         }
+    
+    @cached_property
+    def route_geometries(self) -> List[List[Tuple[float, float]]]:
+        coord_list = [self.coords["current"], self.coords["pickup"], self.coords["dropoff"]]
+        return self.map_client.get_route_geometries(coord_list)
 
     def _validate_duty_window(self) -> None:
         total_drive = self.drive_times["leg1"] + self.drive_times["leg2"]
