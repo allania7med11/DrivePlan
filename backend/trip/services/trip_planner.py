@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import Tuple, Dict, List, Any, Optional
 
 from trip.services.map_client import MapClientProtocol
-from trip.utils.time import get_current_time_rounded_up, round_up_to_15min
+from trip.utils.time import round_up_to_15min
 
 
 class DutyLimitExceeded(Exception):
@@ -17,7 +17,7 @@ class TripPlanner:
         dropoff_location: str,
         cycle_used_hours: float,
         map_client: MapClientProtocol,
-        start_time: Optional[float] = None,
+        start_time: Optional[float] = 5,
     ):
         self.current_location = current_location
         self.pickup_location = pickup_location
@@ -27,7 +27,7 @@ class TripPlanner:
 
         self.loading_time = round_up_to_15min(1)
         self.unloading_time = round_up_to_15min(1)
-        self.start_time = start_time or get_current_time_rounded_up()
+        self.start_time = start_time
 
     def plan_trip(self) -> Dict[str, Any]:
         self._validate_duty_window()
