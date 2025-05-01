@@ -25,20 +25,16 @@ class TripPlanner:
         self.cycle_used_hours = cycle_used_hours
         self.map_client = map_client
 
-        self.loading_time: float = round_up_to_15min(1)
-        self.unloading_time: float = round_up_to_15min(1)
-        self.start_time: float = start_time or get_current_time_rounded_up()
+        self.loading_time = round_up_to_15min(1)
+        self.unloading_time = round_up_to_15min(1)
+        self.start_time = start_time or get_current_time_rounded_up()
 
     def plan_trip(self) -> Dict[str, Any]:
         self._validate_duty_window()
         return {
             "routes": self.route_geometries,
             "rests": self._build_rests(),
-            "log_sheets": [
-                {
-                    "activities": self._build_log_activities()
-                }
-            ]
+            "log_sheets": self._build_log_sheets()
         }
 
     def _build_rests(self) -> List[Dict[str, Any]]:
@@ -48,8 +44,14 @@ class TripPlanner:
             {"name": "🏁 Dropoff Location", "coords": self.coords["dropoff"]},
         ]
 
-    def _build_log_activities(self) -> List[Dict[str, Any]]:
+    def _build_log_sheets(self) -> List[Dict[str, Any]]:
         activities = []
+        if self.start_time > 0:
+            activities.append({
+                "start": 0.0,
+                "end": self.start_time,
+                "status": "Off Duty"
+            })
 
         leg1_start = self.start_time
         leg1_end = leg1_start + self.drive_times["leg1"]
@@ -71,7 +73,23 @@ class TripPlanner:
             raise DutyLimitExceeded("Trip would extend past midnight.")
 
         activities.append({"start": unload_end, "end": 24, "status": "Off Duty"})
-        return activities
+
+        # Calculate time totals
+        total_minutes = 0
+        hours_by_status: Dict[str, float] = {}
+
+        for a in activities:
+            duration = (a["end"] - a["start"]) * 60
+            hours_by_status[a["status"]] = hours_by_status.get(a["status"], 0) + duration
+            total_minutes += duration
+
+        return [{
+            "activities": activities,
+            "total_hours_by_status": {
+                status: round(minutes / 60, 2) for status, minutes in hours_by_status.items()
+            },
+            "total_hours": round(total_minutes / 60, 2)
+        }]
 
     def _validate_duty_window(self) -> None:
         total_drive = self.drive_times["leg1"] + self.drive_times["leg2"]
