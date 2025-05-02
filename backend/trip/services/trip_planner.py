@@ -7,7 +7,7 @@ from trip.utils.time import round_up_to_15min
 
 MAX_DRIVE_HOURS_PER_DAY = 11
 MAX_DUTY_HOURS_PER_DAY = 14
-OFF_DUTY_RESET_DURATION = 10
+DUTY_LIMIT_REST_DURATION = 10
 
 class DutyLimitExceeded(Exception):
     pass
@@ -100,12 +100,24 @@ class TripPlanner:
         rests, log_sheets = self._build_plan_trip()
         return {"rests": rests, "log_sheets": log_sheets, "routes": self.route_geometries}
 
-    def _build_rests(self) -> List[Dict[str, Any]]:
-        return [
+    def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rests = [
             {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
-            {"name": "📦 Pickup Location", "coords": self.coords["pickup"]},
-            {"name": "🌟 Dropoff Location", "coords": self.coords["dropoff"]},
+            {"name": "📦 Pickup Location",            "coords": self.coords["pickup"]},
+            {"name": "🌟 Dropoff Location",           "coords": self.coords["dropoff"]},
         ]
+
+        for remark in all_remarks:
+            if remark.get("information") == "Duty-Limit Rest":
+                loc_name = remark.get("location", "Unknown")
+                coords   = remark.get("coords")
+                rests.append({
+                    "name": f"🔄 {loc_name} (Duty-Limit Rest)",
+                    "coords": coords,
+                })
+
+        return rests
+
 
     def _build_plan_trip(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         legs = [
@@ -147,7 +159,7 @@ class TripPlanner:
         # ── add a single off-duty segment until next midnight ──
         current_time = self._add_end_of_day_rest(all_activities, current_time)
 
-        rests = self._build_rests()
+        rests = self._build_rests(all_remarks)
         log_sheets = self._slice_by_day(all_activities, all_remarks)
         return rests, log_sheets
     
@@ -203,7 +215,7 @@ class TripPlanner:
         remarks: List[Dict[str, Any]],
         activities: List[Dict[str, Any]],
     ) -> Tuple[float, float, float]:
-        end = current_time + OFF_DUTY_RESET_DURATION
+        end = current_time + DUTY_LIMIT_REST_DURATION
         coord = self.map_client.interpolate_along_route(leg.route, leg.km_covered)
         loc = self.map_client.reverse_geocode(coord[1], coord[0])
         activities.append({"start": current_time, "end": end, "status": "Off Duty"})
@@ -212,7 +224,8 @@ class TripPlanner:
                 "start": current_time,
                 "end": end,
                 "location": loc,
-                "information": "Off Duty Reset",
+                "information": "Duty-Limit Rest",
+                "coords": coord
             }
         )
         return end, 0.0, 0.0
