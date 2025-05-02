@@ -29,6 +29,7 @@ class Leg:
 
     remain_drive: float = 0.0
     km_covered: float = 0.0
+    km_covered_no_refill = 0.0
 
     def __post_init__(self):
         self.reset_tracking()
@@ -41,6 +42,12 @@ class Leg:
         max_drive = MAX_DRIVE_HOURS_PER_DAY - driving_time
         max_duty = MAX_DUTY_HOURS_PER_DAY - duty_time
         return min(max_drive, max_duty, self.remain_drive)
+    
+    def compute_allowed_drive_to_refill(self) -> float:
+        # distance remain to get to FUEL_DISTANCE_KM without refill
+        distance = FUEL_DISTANCE_KM - self.km_covered_no_refill
+        raw_time = self.drive_time_for_distance(distance)
+        return round_down_to_15min(raw_time)
 
     def drive_distance_for_allowed_drive(self, allowed_drive: float) -> float:
         return (allowed_drive / self.drive_time) * self.distance
@@ -52,6 +59,12 @@ class Leg:
 
     def consume_allowed_drive(self, allowed_drive: float):
         self.remain_drive = max(0.0, self.remain_drive - allowed_drive)
+        drive_distance = self.drive_distance_for_allowed_drive(allowed_drive)
+        self.km_covered += drive_distance
+        self.km_covered_no_refill += drive_distance
+        
+    def reset_km_covered_no_refill(self):
+        self.km_covered_no_refill = 0.0
 
 class TripPlanner:
     def __init__(
@@ -209,7 +222,12 @@ class TripPlanner:
                     leg, current_time, remarks, activities
                 )
                 continue
-
+            allowed_drive_to_refill = leg.compute_allowed_drive_to_refill()
+            if allowed_drive > allowed_drive_to_refill:
+                current_time, duty_time = self._handle_km_covered_no_refill(
+                    leg, current_time,duty_time, remarks, activities
+                )
+                continue
             current_time, driving_time, duty_time = self._handle_drive_segment(
                 leg, current_time, allowed_drive, driving_time, duty_time, remarks, activities
             )
@@ -240,6 +258,31 @@ class TripPlanner:
             }
         )
         return end, 0.0, 0.0
+    
+    def _handle_km_covered_no_refill(
+        self,
+        leg: Leg,
+        current_time: float,
+        duty_time: float,
+        remarks: List[Dict[str, Any]],
+        activities: List[Dict[str, Any]],
+    ) -> Tuple[float, float]:
+        end = current_time + REFILL_DURATION_HOURS
+        coord = self.map_client.interpolate_along_route(leg.route, leg.km_covered)
+        loc = self.map_client.reverse_geocode(coord[1], coord[0])
+        activities.append({"start": current_time, "end": end, "status": "On Duty"})
+        remarks.append(
+            {
+                "start": current_time,
+                "end": end,
+                "location": loc,
+                "information": "Fuel Refill",
+                "coords": coord
+            }
+        )
+        duty_time += REFILL_DURATION_HOURS
+        leg.reset_km_covered_no_refill()
+        return end, duty_time
 
     def _handle_drive_segment(
         self,
@@ -263,7 +306,6 @@ class TripPlanner:
         driving_time += allowed_drive
         duty_time += allowed_drive
         leg.consume_allowed_drive(allowed_drive)
-        leg.km_covered += leg.drive_distance_for_allowed_drive(allowed_drive)
         if potential_dist > FUEL_DISTANCE_KM:
             refill_end = end + REFILL_DURATION_HOURS
             activities.append({
@@ -333,20 +375,28 @@ class TripPlanner:
     def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         rests = [
             {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
-            {"name": "📦 Pickup Location",            "coords": self.coords["pickup"]},
-            {"name": "🌟 Dropoff Location",           "coords": self.coords["dropoff"]},
+            {"name": "📦 Pickup Location",           "coords": self.coords["pickup"]},
+            {"name": "🌟 Dropoff Location",          "coords": self.coords["dropoff"]},
         ]
 
         for remark in all_remarks:
-            if remark.get("information") == "Duty-Limit Rest":
-                loc_name = remark.get("location", "Unknown")
-                coords   = remark.get("coords")
+            info = remark.get("information")
+            loc_name = remark.get("location", "Unknown")
+            coords = remark.get("coords")
+
+            if info == "Duty-Limit Rest":
                 rests.append({
                     "name": f"🔄 {loc_name} (Duty-Limit Rest)",
                     "coords": coords,
                 })
+            elif info == "Fuel Refill":
+                rests.append({
+                    "name": f"⛽ {loc_name} (Fuel Refill)",
+                    "coords": coords,
+                })
 
         return rests
+
 
     def _slice_by_day(
         self, activities: List[Dict[str, Any]], remarks: List[Dict[str, Any]]
