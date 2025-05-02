@@ -8,6 +8,7 @@ from trip.utils.time import round_up_to_15min
 MAX_DRIVE_HOURS_PER_DAY = 11
 MAX_DUTY_HOURS_PER_DAY = 14
 DUTY_LIMIT_REST_DURATION = 10
+MAX_CYCLE_HOURS = 70
 
 class DutyLimitExceeded(Exception):
     pass
@@ -97,8 +98,26 @@ class TripPlanner:
         return self.map_client.get_route_geometries(self.coord_list)
 
     def plan_trip(self) -> Dict[str, Any]:
+        self._enforce_cycle_limit()
         rests, log_sheets = self._build_plan_trip()
         return {"rests": rests, "log_sheets": log_sheets, "routes": self.route_geometries}
+    
+    def _enforce_cycle_limit(self) -> None:
+        """
+        Raises DutyLimitExceeded if the sum of
+        previous cycle hours + this trip's duty would go over MAX_CYCLE_HOURS.
+        """
+        total_duty = (
+            self.drive_times["leg1"]
+          + self.drive_times["leg2"]
+          + self.loading_time
+          + self.unloading_time
+        )
+        if self.cycle_used_hours + total_duty > MAX_CYCLE_HOURS:
+            raise DutyLimitExceeded(
+                f"Cycle would exceed {MAX_CYCLE_HOURS}h "
+                f"(used {self.cycle_used_hours:.1f} + need {total_duty:.1f})"
+            )
 
     def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         rests = [
