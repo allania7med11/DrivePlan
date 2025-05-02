@@ -4,6 +4,20 @@ import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from 'react-leafle
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
+type Rest = {
+  name: string;
+  coords: [number, number];
+};
+
+type Props = {
+  rests: {
+    inputs: Rest[];
+    duty_limit: Rest[];
+    refill: Rest[];
+  };
+  routes: [number, number][][];
+};
+
 const markerIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png',
   iconSize: [30, 48],
@@ -12,36 +26,41 @@ const markerIcon = new L.Icon({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png',
 });
 
-type Rest = {
-  name: string;
-  coords: [number, number]; // [lng, lat]
-};
-
-type Props = {
-  rests: Rest[];
-  routes: [number, number][][]; // list of route segments
-};
+const reverse = ([lng, lat]: [number, number]): [number, number] => [lat, lng];
 
 export default function MapView({ rests, routes }: Props) {
-  const reverse = ([lng, lat]: [number, number]): [number, number] => [lat, lng];
+  // Flatten all rests into a single list with offsets by type
+  const restTypes: { items: Rest[]; offset: [number, number] }[] = [
+    { items: rests.inputs, offset: [0, -20] },
+    { items: rests.duty_limit, offset: [0, 10] },
+    { items: rests.refill, offset: [0, 30] },
+  ];
 
-  const markers = rests.map((rest) => ({
-    ...rest,
-    latlng: reverse(rest.coords),
-  }));
+  const markers = restTypes.flatMap(({ items, offset }) =>
+    items.map((rest) => ({
+      name: rest.name,
+      coords: reverse(rest.coords),
+      offset,
+    }))
+  );
 
-  const center = markers[0]?.latlng || [39.5, -98.35]; // Fallback to center of US
+  const center = markers[0]?.coords || [39.5, -98.35];
 
   return (
-    <MapContainer center={center} zoom={6} style={{ height: '500px', width: '100%', borderRadius: '0.5rem' }} scrollWheelZoom={true}>
+    <MapContainer
+      center={center}
+      zoom={6}
+      style={{ height: '500px', width: '100%', borderRadius: '0.5rem' }}
+      scrollWheelZoom={true}
+    >
       <TileLayer
         attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         url='https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
       />
 
       {markers.map((marker, idx) => (
-        <Marker key={idx} position={marker.latlng} icon={markerIcon}>
-          <Tooltip permanent direction="top" offset={[0, -15]}>
+        <Marker key={idx} position={marker.coords} icon={markerIcon}>
+          <Tooltip permanent direction="top" offset={marker.offset}>
             {marker.name}
           </Tooltip>
         </Marker>
