@@ -3,11 +3,8 @@
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { Rest } from '@/types/trip';
 
-type Rest = {
-  name: string;
-  coords: [number, number];
-};
 
 type Props = {
   rests: {
