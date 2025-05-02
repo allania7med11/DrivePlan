@@ -119,23 +119,6 @@ class TripPlanner:
                 f"(used {self.cycle_used_hours:.1f} + need {total_duty:.1f})"
             )
 
-    def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        rests = [
-            {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
-            {"name": "📦 Pickup Location",            "coords": self.coords["pickup"]},
-            {"name": "🌟 Dropoff Location",           "coords": self.coords["dropoff"]},
-        ]
-
-        for remark in all_remarks:
-            if remark.get("information") == "Duty-Limit Rest":
-                loc_name = remark.get("location", "Unknown")
-                coords   = remark.get("coords")
-                rests.append({
-                    "name": f"🔄 {loc_name} (Duty-Limit Rest)",
-                    "coords": coords,
-                })
-
-        return rests
 
 
     def _build_plan_trip(self) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
@@ -311,6 +294,24 @@ class TripPlanner:
                 "status": "Off Duty",
             })
         return end
+    
+    def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rests = [
+            {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
+            {"name": "📦 Pickup Location",            "coords": self.coords["pickup"]},
+            {"name": "🌟 Dropoff Location",           "coords": self.coords["dropoff"]},
+        ]
+
+        for remark in all_remarks:
+            if remark.get("information") == "Duty-Limit Rest":
+                loc_name = remark.get("location", "Unknown")
+                coords   = remark.get("coords")
+                rests.append({
+                    "name": f"🔄 {loc_name} (Duty-Limit Rest)",
+                    "coords": coords,
+                })
+
+        return rests
 
     def _slice_by_day(
         self, activities: List[Dict[str, Any]], remarks: List[Dict[str, Any]]
