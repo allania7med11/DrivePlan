@@ -2,11 +2,10 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import TripForm from "./TripForm";
 import { TripResult } from "@/types/trip";
+import DailyLogCarousel from "./DailyLogCarousel";
 
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
-const DailyLogCanvas = dynamic(() => import("./DailyLogCanvas"), {
-  ssr: false,
-});
+
 
 
 export default function TripPlanner() {
@@ -38,7 +37,7 @@ export default function TripPlanner() {
                 Daily Log Sheet
               </h2>
               <div className="flex justify-center p-2">
-                <DailyLogCanvas logSheet={result.log_sheets?.[0]} />
+                <DailyLogCarousel logSheets={result.log_sheets || []} />
               </div>
             </div>
           </div>

@@ -14,11 +14,17 @@ export type LogSheet = {
     total_hours?: number;
 };
 
+export type Rest = {
+    name: string;
+    coords: [number, number];
+}
+
 export type TripResult = {
     routes: [number, number][][];
     rests: {
-        name: string;
-        coords: [number, number];
-    }[];
+        inputs: Rest[];
+        duty_limit: Rest[];
+        refill: Rest[];
+    };
     log_sheets: LogSheet[];
 };

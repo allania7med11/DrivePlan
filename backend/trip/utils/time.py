@@ -21,3 +21,10 @@ def round_up_to_15min(hours: float) -> float:
     Example: 1.02 → 1.25, 2.6 → 2.75
     """
     return math.ceil(hours * 4) / 4
+
+def round_down_to_15min(hours: float) -> float:
+    """
+    Rounds any float hour value down to the previous 15-minute block.
+    Example: 1.12 → 1.00, 2.60 → 2.50
+    """
+    return math.floor(hours * 4) / 4
