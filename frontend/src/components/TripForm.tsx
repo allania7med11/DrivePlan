@@ -20,6 +20,7 @@ export default function TripForm({ setResult, setError }: Props) {
     dropoff_location: "",
     cycle_used_hours: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -32,11 +33,11 @@ export default function TripForm({ setResult, setError }: Props) {
     e.preventDefault();
     setError("");
     setResult(null);
+    setLoading(true);
 
     try {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
       const response = await fetch(`${backendUrl}/api/plan-trip/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,11 +51,11 @@ export default function TripForm({ setResult, setError }: Props) {
       if (!response.ok) throw new Error(data.error || "Something went wrong");
       setResult(data);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("An unknown error occurred.");
-      }
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,9 +91,18 @@ export default function TripForm({ setResult, setError }: Props) {
         <div className="flex justify-center pt-4">
           <button
             type="submit"
-            className="px-6 py-3 bg-blue-600 text-white font-semibold text-lg rounded-md hover:bg-blue-700 transition duration-200 shadow-md"
+            disabled={loading}
+            className={`
+              flex items-center justify-center
+              px-6 py-3 bg-blue-600 text-white font-semibold text-lg rounded-md
+              shadow-md transition duration-200
+              ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"}
+            `}
           >
             ✨ Plan Trip
+            {loading && (
+              <div className="animate-spin ml-2 h-5 w-5 rounded-full border-2 border-white border-t-transparent" />
+            )}
           </button>
         </div>
       </form>

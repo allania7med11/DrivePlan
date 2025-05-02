@@ -353,25 +353,31 @@ class TripPlanner:
             })
         return end
     
-    def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        rests = [
-            {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
-            {"name": "📦 Pickup Location",           "coords": self.coords["pickup"]},
-            {"name": "🌟 Dropoff Location",          "coords": self.coords["dropoff"]},
-        ]
+    def _build_rests(self, all_remarks: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        rests = {
+            "inputs": [
+                {"name": "🚚 Current Location (Start)", "coords": self.coords["current"]},
+                {"name": "📦 Pickup Location",           "coords": self.coords["pickup"]},
+                {"name": "🌟 Dropoff Location",          "coords": self.coords["dropoff"]},
+            ],
+            "duty_limit": [],
+            "refill": [],
+        }
 
         for remark in all_remarks:
             info = remark.get("information")
             loc_name = remark.get("location", "Unknown")
             coords = remark.get("coords")
+            if not coords:
+                continue
 
             if info == "Duty-Limit Rest":
-                rests.append({
+                rests["duty_limit"].append({
                     "name": f"🔄 {loc_name} (Duty-Limit Rest)",
                     "coords": coords,
                 })
             elif info == "Fuel Refill":
-                rests.append({
+                rests["refill"].append({
                     "name": f"⛽ {loc_name} (Fuel Refill)",
                     "coords": coords,
                 })
