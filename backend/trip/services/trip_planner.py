@@ -3,12 +3,16 @@ from typing import Tuple, Dict, List, Any, Optional
 from dataclasses import dataclass
 
 from trip.services.map_client import MapClientProtocol
-from trip.utils.time import round_up_to_15min
+from trip.utils.time import round_down_to_15min, round_up_to_15min
 
 MAX_DRIVE_HOURS_PER_DAY = 11
 MAX_DUTY_HOURS_PER_DAY = 14
 DUTY_LIMIT_REST_DURATION = 10
 MAX_CYCLE_HOURS = 70
+FUEL_MILES = 1000
+KM_PER_MILE = 1.60934
+FUEL_DISTANCE_KM = FUEL_MILES * KM_PER_MILE  # ≈1609.34 km
+REFILL_DURATION_HOURS = 0.5
 
 class DutyLimitExceeded(Exception):
     pass
@@ -40,6 +44,11 @@ class Leg:
 
     def drive_distance_for_allowed_drive(self, allowed_drive: float) -> float:
         return (allowed_drive / self.drive_time) * self.distance
+    
+    def drive_time_for_distance(self, distance: float) -> float:
+        if self.distance == 0:
+            return 0.0
+        return (distance / self.distance) * self.drive_time
 
     def consume_allowed_drive(self, allowed_drive: float):
         self.remain_drive = max(0.0, self.remain_drive - allowed_drive)
@@ -202,7 +211,7 @@ class TripPlanner:
                 continue
 
             current_time, driving_time, duty_time = self._handle_drive_segment(
-                leg, current_time, allowed_drive, driving_time, duty_time, activities
+                leg, current_time, allowed_drive, driving_time, duty_time, remarks, activities
             )
 
         current_time, driving_time, duty_time = self._handle_leg_drive_time_completed(
@@ -239,14 +248,40 @@ class TripPlanner:
         allowed_drive: float,
         driving_time: float,
         duty_time: float,
+        remarks: List[Dict[str, Any]],
         activities: List[Dict[str, Any]],
     ) -> Tuple[float, float, float]:
+        # compute how far we'd go if we drove the full allowed_drive
+        potential_dist = leg.drive_distance_for_allowed_drive(allowed_drive)
+        if potential_dist > FUEL_DISTANCE_KM:
+            # time needed to drive up to the fuel limit , rounded down to 0.25h
+            raw_time = leg.drive_time_for_distance(FUEL_DISTANCE_KM)
+            fuel_drive_time_limit = round_down_to_15min(raw_time)
+            allowed_drive = fuel_drive_time_limit
         end = current_time + allowed_drive
         activities.append({"start": current_time, "end": end, "status": "Driving"})
         driving_time += allowed_drive
         duty_time += allowed_drive
         leg.consume_allowed_drive(allowed_drive)
         leg.km_covered += leg.drive_distance_for_allowed_drive(allowed_drive)
+        if potential_dist > FUEL_DISTANCE_KM:
+            refill_end = end + REFILL_DURATION_HOURS
+            activities.append({
+                "start": end,
+                "end":   refill_end,
+                "status":"Off Duty"
+            })
+            # add a “Fuel Refill” remark at this point
+            coord = self.map_client.interpolate_along_route(leg.route, leg.km_covered)
+            loc   = self.map_client.reverse_geocode(coord[1], coord[0])
+            remarks.append({
+                "start":      end,
+                "end":        refill_end,
+                "location":   loc,
+                "information":"Fuel Refill",
+                "coords":     coord
+            })
+            end = refill_end
         return end, driving_time, duty_time
 
     def _handle_leg_drive_time_completed(
