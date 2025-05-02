@@ -234,7 +234,7 @@ class TripPlanner:
                 )
                 continue
             current_time, driving_time, duty_time = self._handle_drive_segment(
-                leg, current_time, allowed_drive, driving_time, duty_time, remarks, activities
+                leg, current_time, allowed_drive, driving_time, duty_time, activities
             )
 
         current_time, driving_time, duty_time = self._handle_leg_drive_time_completed(
@@ -297,39 +297,14 @@ class TripPlanner:
         allowed_drive: float,
         driving_time: float,
         duty_time: float,
-        remarks: List[Dict[str, Any]],
         activities: List[Dict[str, Any]],
     ) -> Tuple[float, float, float]:
-        # compute how far we'd go if we drove the full allowed_drive
-        potential_dist = leg.drive_distance_for_allowed_drive(allowed_drive)
-        if potential_dist > FUEL_DISTANCE_KM:
-            # time needed to drive up to the fuel limit , rounded down to 0.25h
-            raw_time = leg.drive_time_for_distance(FUEL_DISTANCE_KM)
-            fuel_drive_time_limit = round_down_to_15min(raw_time)
-            allowed_drive = fuel_drive_time_limit
         end = current_time + allowed_drive
         activities.append({"start": current_time, "end": end, "status": "Driving"})
         driving_time += allowed_drive
         duty_time += allowed_drive
         leg.consume_allowed_drive(allowed_drive)
-        if potential_dist > FUEL_DISTANCE_KM:
-            refill_end = end + REFILL_DURATION_HOURS
-            activities.append({
-                "start": end,
-                "end":   refill_end,
-                "status":"Off Duty"
-            })
-            # add a “Fuel Refill” remark at this point
-            coord = self.map_client.interpolate_along_route(leg.route, leg.km_covered)
-            loc   = self.map_client.reverse_geocode(coord[1], coord[0])
-            remarks.append({
-                "start":      end,
-                "end":        refill_end,
-                "location":   loc,
-                "information":"Fuel Refill",
-                "coords":     coord
-            })
-            end = refill_end
+        leg.km_covered += leg.drive_distance_for_allowed_drive(allowed_drive)
         return end, driving_time, duty_time
 
     def _handle_leg_drive_time_completed(
