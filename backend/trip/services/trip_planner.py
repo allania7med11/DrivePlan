@@ -304,7 +304,6 @@ class TripPlanner:
         driving_time += allowed_drive
         duty_time += allowed_drive
         leg.consume_allowed_drive(allowed_drive)
-        leg.km_covered += leg.drive_distance_for_allowed_drive(allowed_drive)
         return end, driving_time, duty_time
 
     def _handle_leg_drive_time_completed(
