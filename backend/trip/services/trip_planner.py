@@ -65,6 +65,9 @@ class Leg:
         
     def reset_km_covered_no_refill(self):
         self.km_covered_no_refill = 0.0
+    
+    def set_km_covered_no_refill(self, distance: float):
+        self.km_covered_no_refill = distance
 
 class TripPlanner:
     def __init__(
@@ -169,13 +172,13 @@ class TripPlanner:
         all_remarks: List[Dict[str, Any]] = []
         current_time = self.start_time
         driving_time = duty_time = 0.0
-        
+        km_covered_no_refill = 0.0
         # ── add initial Off Duty if trip doesn't start at hour 0 ──
         current_time = self._add_start_off_duty(all_activities, current_time)
 
         for leg in legs:
-            activities, remarks, current_time, driving_time, duty_time = self._process_leg(
-                leg, current_time, driving_time, duty_time
+            activities, remarks, current_time, driving_time, duty_time, km_covered_no_refill = self._process_leg(
+                leg, current_time, driving_time, duty_time, km_covered_no_refill 
             )
             all_activities.extend(activities)
             all_remarks.extend(remarks)
@@ -210,10 +213,12 @@ class TripPlanner:
         current_time: float,
         driving_time: float,
         duty_time: float,
+        km_covered_no_refill: float, 
     ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], float, float, float]:
         activities: List[Dict[str, Any]] = []
         remarks: List[Dict[str, Any]] = []
         leg.reset_tracking()
+        leg.set_km_covered_no_refill(km_covered_no_refill)
 
         while leg.remain_drive > 0:
             allowed_drive = leg.compute_allowed_drive(driving_time, duty_time)
@@ -235,7 +240,8 @@ class TripPlanner:
         current_time, driving_time, duty_time = self._handle_leg_drive_time_completed(
             leg, current_time, driving_time, duty_time, remarks, activities
         )
-        return activities, remarks, current_time, driving_time, duty_time
+        km_covered_no_refill = leg.km_covered_no_refill
+        return activities, remarks, current_time, driving_time, duty_time, km_covered_no_refill
 
     def _handle_off_duty_reset(
         self,
