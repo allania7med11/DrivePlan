@@ -1,10 +1,9 @@
-.PHONY: backend frontend both
+.PHONY: up-dev down-dev
 
-backend:
-	cd backend && . ../venv/bin/activate && python manage.py runserver
+up-dev: ## Start complete development environment
+	cd frontend && npm run dev -- -H 0.0.0.0 &
+	docker compose --profile dev up -d
 
-frontend:
-	cd frontend && npm run dev
-
-both:
-	make -j2 frontend backend
+down-dev: ## Stop development environment
+	docker compose --profile dev down
+	-pkill -f "next dev"

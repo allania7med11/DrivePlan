@@ -1,0 +1,32 @@
+services:
+  #region development services
+  driveplan_backend_dev:
+    container_name: driveplan_backend_dev
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    env_file: ./backend/.env.local
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    profiles: ["dev"]
+    restart: unless-stopped
+
+  driveplan_nginx_dev:
+    container_name: driveplan_nginx_dev
+    build:
+      context: .
+      dockerfile: nginx_dev/Dockerfile
+    ports:
+      - "4000:80"  # Development port
+    depends_on:
+      - driveplan_backend_dev
+    profiles: ["dev"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # For Ubuntu compatibility
+    volumes:
+      - ./nginx_dev/nginx.conf:/etc/nginx/nginx.conf
+  #endregion

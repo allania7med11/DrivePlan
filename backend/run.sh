@@ -15,25 +15,11 @@ if [ "${MIGRATE:-true}" = "true" ]; then
     python manage.py migrate --noinput
 fi
 
-# Collect static files if needed (development)
-if [ "${COLLECTSTATIC:-false}" = "true" ]; then
-    echo "Collecting static files..."
-    python manage.py collectstatic --noinput
-fi
-
-# Start the appropriate server based on environment
-if [ "${ENVIRONMENT:-dev}" = "prod" ]; then
-    echo "Starting production server with gunicorn..."
-    exec gunicorn --bind 0.0.0.0:${PORT:-8000} \
-                  --workers 2 \
-                  --timeout 30 \
-                  --keep-alive 2 \
-                  --max-requests 1000 \
-                  --max-requests-jitter 100 \
-                  --access-logfile - \
-                  --error-logfile - \
-                  backend.wsgi:application
-else
-    echo "Starting development server..."
-    exec python manage.py runserver 0.0.0.0:${PORT:-8000}
+# Start the application based on the environment
+if [ "$ENVIRONMENT" = "debug" ]; then
+    sleep infinity
+elif [ "$ENVIRONMENT" = "dev" ]; then
+    python manage.py runserver 0.0.0.0:$PORT
+elif [ "$ENVIRONMENT" = "prod" ]; then
+    gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3
 fi
