@@ -1,4 +1,4 @@
-# DrivePlan Backend Dockerfile - Development focused
+# DrivePlan Backend Dockerfile
 FROM python:3.11-slim as base
 
 # System dependencies
@@ -18,16 +18,11 @@ ARG APP_UID=1000
 RUN adduser -u $APP_UID --disabled-password --gecos "" appuser
 
 #########################################
-# Development stage
+# Common application stage
 #########################################
-FROM base as development
+FROM base as app
 
-# Install development tools
-RUN apt-get update && apt-get install -y \
-    curl git vim && \
-    rm -rf /var/lib/apt/lists/*
-
-# Working directory setup (following ChatTagAI pattern)
+# Working directory setup
 WORKDIR /app
 RUN chown -R appuser:appuser /app
 
@@ -45,3 +40,27 @@ RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
 ENTRYPOINT ["sh", "./backend/run.sh"]
+
+#########################################
+# Development stage
+#########################################
+FROM app as development
+
+# Switch back to root to install dev tools
+USER root
+
+# Install development tools
+RUN apt-get update && apt-get install -y \
+    curl git vim && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch back to appuser
+USER appuser
+
+#########################################
+# Production stage
+#########################################
+FROM app as production
+
+# Production stage inherits everything from app
+# No additional setup needed

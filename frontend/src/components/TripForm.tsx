@@ -37,7 +37,7 @@ export default function TripForm({ setResult, setError }: Props) {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:4000";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "";
       const response = await fetch(`${backendUrl}/api/plan-trip/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -8,14 +8,8 @@ http {
     include /etc/nginx/mime.types;
     default_type application/octet-stream;
     
-    # WebSocket upgrade mapping for Next.js HMR
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
-    }
-    
     upstream backend {
-        server driveplan_backend_dev:8000;
+        server driveplan_backend:8000;
     }
 
     server {
@@ -37,34 +31,35 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         }
         
-        # Django static files - proxy to backend (development)
+        # Django static files - proxy to frontend
         location /back_static/ {
-            proxy_pass http://backend;
-            proxy_set_header Host $host;
+            proxy_pass ${FRONTEND_URL};
+            proxy_set_header Host ${FRONTEND_HOST};
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # Handle SSL verification
+            proxy_ssl_verify off;
+            proxy_ssl_server_name on;
         }
         
-        # Frontend - proxy to host (development) with WebSocket support
+        # Frontend - proxy to Vercel/staging
         location / {
-            proxy_pass http://host.docker.internal:3000;
-            proxy_set_header Host $host;
+            proxy_pass ${FRONTEND_URL};
+            proxy_set_header Host ${FRONTEND_HOST};
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
             
-            # WebSocket support for Next.js HMR
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $connection_upgrade;
+            # Handle SSL verification
+            proxy_ssl_verify off;
+            proxy_ssl_server_name on;
             
-            # Disable caching completely
-            add_header Cache-Control "no-cache, no-store, must-revalidate";
-            add_header Pragma "no-cache";
-            add_header Expires "0";
-            
-            # Fail fast when upstream is down
-            proxy_connect_timeout 1s;
-            proxy_next_upstream off;
+            # Timeout settings
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
         }
     }
 }

@@ -30,3 +30,33 @@ services:
     volumes:
       - ./nginx_dev/nginx.conf:/etc/nginx/nginx.conf
   #endregion
+
+  #region production services
+  driveplan_backend:
+    container_name: driveplan_backend
+    image: ghcr.io/allania7med11/driveplan_backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    env_file: ./backend/.env.production.local
+    environment:
+      - ENVIRONMENT=prod
+      - DEBUG=False
+      - MIGRATE=true
+      - PORT=8000
+    profiles: ["prod"]
+
+  driveplan_nginx:
+    container_name: driveplan_nginx
+    image: ghcr.io/allania7med11/driveplan_nginx:latest
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "4010:80"  # Local production testing port
+    depends_on:
+      - driveplan_backend
+    profiles: ["prod"]
+    env_file: ./nginx/.env.production.local
+  #endregion
