@@ -22,4 +22,7 @@ elif [ "$ENVIRONMENT" = "dev" ]; then
     python manage.py runserver 0.0.0.0:$PORT
 elif [ "$ENVIRONMENT" = "prod" ]; then
     gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+elif [ "$ENVIRONMENT" = "static" ]; then
+    # Don't change this message; we use it to detect when static files are generated successfully
+    python manage.py collectstatic --noinput && echo "Generation completed successfully"
 fi

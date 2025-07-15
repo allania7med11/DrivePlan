@@ -1,9 +1,10 @@
 FROM nginx:alpine
 
-# Copy template and startup script
-COPY nginx/nginx.conf.template /etc/nginx/nginx.conf.template
-COPY nginx/run.sh /run.sh
-RUN chmod +x /run.sh
+# Copy nginx configuration
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Copy built static assets
+COPY backend/staticfiles/ /var/www/backend_static/
+COPY frontend/out/ /var/www/frontend/
 
 EXPOSE 80
-CMD ["/run.sh"]

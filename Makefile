@@ -8,7 +8,15 @@ down-dev: ## Stop development environment
 	docker compose --profile dev down
 	-pkill -f "next dev"
 
-build-images: ## Build production images
+setup-venv: ## Setup virtual environment for static generation
+	cd backend && python -m venv venv
+	cd backend && bash -c "source venv/bin/activate && pip install -r requirements.txt"
+
+build-assets: ## Build all static assets for production using containers
+	docker compose --profile static run --rm driveplan_backend_static
+	cd frontend && npm run build
+
+build-images: build-assets ## Build Docker images
 	docker compose --profile prod build
 
 push-images: build-images ## Build and push images to registry
