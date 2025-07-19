@@ -7,9 +7,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 env.read_env(os.path.join(BASE_DIR, ".env"))
 
-DJANGO_ENV = env('DJANGO_ENV')
+ENVIRONMENT = env('ENVIRONMENT')
 SECRET_KEY = env('SECRET_KEY')
-DEBUG = DJANGO_ENV == 'development'
+DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = ["*"]
 
@@ -79,7 +79,7 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = '/static/'
+STATIC_URL = '/back_static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
